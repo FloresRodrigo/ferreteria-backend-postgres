@@ -1,0 +1,30 @@
+{
+  "name": "ferreteria-backend",
+  "version": "1.0.0",
+  "description": "Diseñar e implementar un sistema web completo, aplicando los conocimientos y tecnologías abordadas en la materia **Programación y Servicios Web**, tanto en frontend como en backend.   El proyecto incluye aspectos fundamentales como seguridad, consumo de servicios web externos, validaciones, gestión de datos y desarrollo de una arquitectura organizada.",
+  "homepage": "https://github.com/FloresRodrigo/ferreteria-backend#readme",
+  "bugs": {
+    "url": "https://github.com/FloresRodrigo/ferreteria-backend/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FloresRodrigo/ferreteria-backend.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "mongoose": "^9.1.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}
