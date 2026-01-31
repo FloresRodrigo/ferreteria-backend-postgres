@@ -71,6 +71,21 @@ class MailService {
         });
     };
 
+    //Compra confirmada
+    async sendSuccessfulPayment(usuario, ticket) {
+        await transporter.sendMail({
+            from: `"Ferreteria" <${process.env.NODEMAIL_USER}>`,
+            to: usuario.email,
+            subject: `Compra confirmada - Ticket: #${ticket.nro_ticket}`,
+            html: `
+                <h2>Gracias por tu compra</h2>
+                <p>Tu pago fue confirmado exitosamente</p>
+                <p><strong>Ticket:</strong> #${ticket.nro_ticket}</p>
+                <p><strong>Total:</strong> $${ticket.total}</p>
+            `
+        });
+    };
+
 };//MAILSERVICE
 
 module.exports = new MailService();
