@@ -53,7 +53,7 @@ class AuthService {
             await mailService.sendWelcomeEmail(usuario);
         } catch (error) {
             console.error('ERROR AL ENVIAR EMAIL: ', error);
-        }
+        };
         return {
             nombre_completo: usuario.nombre_completo,
             username: usuario.username,
@@ -133,7 +133,7 @@ class AuthService {
             await mailService.sendResetPasswordEmail(usuario, resetToken);
         } catch (error) {
             console.error('ERROR AL ENVIAR EMAIL: ', error);
-        }
+        };
     };
 
     //METODO PARA REINICIO DE CONTRASEÑA
@@ -169,7 +169,7 @@ class AuthService {
             await mailService.sendPasswordChangedEmail(usuario);
         } catch (error) {
             console.error('ERROR AL ENVIAR EMAIL', error);
-        }
+        };
     };
 
 };//AUTHSERVICE
