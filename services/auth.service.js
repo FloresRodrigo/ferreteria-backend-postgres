@@ -67,11 +67,13 @@ class AuthService {
         if(!login || !password) {
             throw new Error('Datos invalidos');
         };
+        //Para que no sea case sensitive al hacer login
+        const loginMinuscula = login.trim().toLowerCase();
         //Buscar usuario por username o email
         const usuario = await Usuario.findOne({
             $or: [
-                { username: login },
-                { email: login }
+                { username: loginMinuscula },
+                { email: loginMinuscula }
             ]
         });
         if(!usuario) {
