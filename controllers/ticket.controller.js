@@ -34,7 +34,7 @@ ticketCtrl.getMyTickets = async (req, res) => {
     } catch (error) {
         console.error('ERROR AL OBTENER LOS TICKETS: ', error);
         return failed(res, error.message);
-    }
+    };
 };
 
 //METODO PARA OBTENER TODOS LOS TICKETS (admin)
@@ -45,7 +45,7 @@ ticketCtrl.getTickets = async (req, res) => {
     } catch (error) {
         console.error('ERROR AL OBTENER LOS TICKETS: ', error);
         return failed(res, error.message);
-    }
+    };
 };
 
 //METODO PARA OBTENER UN TICKET (cliente)
@@ -56,7 +56,7 @@ ticketCtrl.getMyTicket = async (req, res) => {
     } catch (error) {
         console.error('ERROR AL OBTENER TICKET: ', error);
         return failed(res, error.message);
-    }
+    };
 };
 
 //METODO PARA OBTENER UN TICKET (admin)
@@ -83,7 +83,6 @@ ticketCtrl.pagarTicket = async (req, res) => {
         console.error('ERROR AL PAGAR TICKET: ', error);
         return failed(res, error.message);
     };
-    
 };
 
 module.exports = ticketCtrl;

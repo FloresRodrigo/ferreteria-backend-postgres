@@ -19,18 +19,18 @@ class MercadoPagoService {
                         currency_id: 'ARS'
                     }
                 ],
-                //URLs a donde redirigira dependiendo del resultado (aun no estan implementadas)
+                //URLs a donde redirigira dependiendo del resultado (ya estan implementadas)
                 back_urls: {
-                    success: 'https://localhost:4200/pago-exitoso',
-                    failure: 'https://localhost:4200/pago-fallido',
-                    pending: 'https://localhost:4200/pago-pendiente'
+                    success: `${ process.env.FRONT_URL }/pago/exitoso`,
+                    failure: `${ process.env.FRONT_URL }/pago/fallido`,
+                    pending: `${ process.env.FRONT_URL }/pago/pendiente`
                 },
                 //Si el resultado es success retornara aprobado
                 auto_return: 'approved',
                 //Se guarda el id del ticket con el que se inicio el proceso
                 external_reference: ticket._id.toString(),
                 //URL a donde mandara la notificacion
-                notification_url: process.env.NGROK_MP_URL
+                notification_url: process.env.MP_URL
             }
         });
         //Devuelve el link para iniciar el proceso de pago

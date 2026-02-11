@@ -3,7 +3,7 @@ const ticketService = require("../services/ticket.service");
 
 const mercadopagoCtrl = {};
 
-//METODO PARA TODO EL PROCESO DEL WEBHOOK (solo lo mercado pago al terminar el proceso de pago)
+//METODO PARA TODO EL PROCESO DEL WEBHOOK (solo lo usa mercado pago al terminar el proceso de pago)
 mercadopagoCtrl.pago = async (req, res) => {
     try {
         await mercadopagoService.procesarWebhook(req);

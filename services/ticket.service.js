@@ -45,6 +45,7 @@ class TicketService {
         //Crear ticket con los detalles establecidos
         const ticket = await Ticket.create({
             id_cliente: usuario._id,
+            fecha_compra: new Date(),
             detalles_ticket: detalles
         });
         return ticket;
@@ -168,7 +169,7 @@ class TicketService {
             throw new Error('No autorizado');
         };
         return ticket;
-    } ;
+    };
 
     //METODO PARA OBTENER UN TICKET (admin)
     async getTicket(id) {
