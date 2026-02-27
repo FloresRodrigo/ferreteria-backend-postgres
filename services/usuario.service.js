@@ -1,6 +1,6 @@
 const Usuario = require('../models/usuario');
 const bcrypt = require('bcrypt');
-const mailService = require('./mail.service');
+//const mailService = require('./mail.service');
 
 class UsuarioService {
     //METODO PARA OBTENER TODOS LOS USUARIOS
@@ -87,6 +87,7 @@ class UsuarioService {
         };
         await usuario.save();
         //Enviar solo si se cambio email y actualizo correctamente
+        /*
         if(emailChanged) {
             try {
                 await mailService.sendEmailChangedEmail(oldEmail, email);
@@ -94,6 +95,7 @@ class UsuarioService {
                 console.error('ERROR AL ENVIAR EMAIL: ', error);
             };
         };
+        */
     };
 
     //METODO PARA CAMBIAR CONTRASEÑA
@@ -133,11 +135,13 @@ class UsuarioService {
         usuario.passwordChangedAt = new Date();
         await usuario.save();
         //Notificar cambio de contraseña
+        /*
         try {
             await mailService.sendPasswordChangedEmail(usuario);
         } catch (error) {
             console.error('ERROR AL ENVIAR EMAIL', error);
         };
+        */
     };
 
     //METODO PARA ACTUALIZAR USUARIO
@@ -209,6 +213,7 @@ class UsuarioService {
             };
         };
         await usuario.save();
+        /*
         if(emailChanged) {
             try {
                 await mailService.sendEmailChangedEmail(oldEmail, email);
@@ -223,6 +228,7 @@ class UsuarioService {
                 console.error('ERROR AL ENVIAR EMAIL: ', error);
             };
         };
+        */
     };
 
     //METODO PARA ELIMINAR UN USUARIO (logicamente)
@@ -248,11 +254,13 @@ class UsuarioService {
         usuario.deleteRequestedAt = new Date();
         await usuario.save();
         //Notificar programacion de eliminacion de cuenta
+        /*
         try {
             await mailService.sendDeletedAccountEmail(usuario);
         } catch (error) {
             console.error('ERROR AL ENVIAR EMAIL', error);
-        }
+        };
+        */
     };
 
 };//USUARIOSERVICE

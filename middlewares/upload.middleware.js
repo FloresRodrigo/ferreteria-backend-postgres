@@ -1,16 +1,7 @@
 const multer = require('multer');
-const path = require('path');
 
-//Donde colocar la imagen y como llamarla
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/articulos');
-    },
-    filename: (req, file, cb) => {
-        const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueName + path.extname(file.originalname));
-    }
-});
+//Guardar la imagen
+const storage = multer.memoryStorage();
 
 //Aceptar solo imagenes de tipo establecido
 const fileFilter = (req, file, cb) => {

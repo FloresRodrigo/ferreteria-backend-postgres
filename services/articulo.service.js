@@ -1,13 +1,15 @@
 const Articulo = require('../models/articulo');
-const fs = require('fs');
-const path = require('path');
+const { subirImagen } = require('./imgbb.service');
 
 class ArticuloService {
     //METODO PARA CREAR UN ARTICULO
     async createArticulo({ nombre, descripcion, imagen, precio, stock }) {
         //Validar que lleguen todos los datos
-        if(!nombre || !descripcion || !imagen || precio === undefined || precio === null || stock === undefined || stock === null) {
+        if(!nombre || !descripcion || precio === undefined || precio === null || stock === undefined || stock === null) {
             throw new Error('Debe ingresar todos los campos');
+        };
+        if(!imagen) {
+            throw new Error('Debe subir una imagen del articulo');
         };
         //VALIDACIONES
         //Validar longitudes
@@ -24,10 +26,12 @@ class ArticuloService {
         if(stock < 0) {
             throw new Error('El stock no puede ser negativo');
         };
+        //Se sube solo la imagen al final
+        const imagenUrl = await subirImagen(imagen.buffer);
         const articulo = await Articulo.create({
             nombre: nombre,
             descripcion: descripcion,
-            imagen: imagen,
+            imagen: imagenUrl,
             precio: precio,
             stock: stock 
         });
@@ -217,73 +221,58 @@ class ArticuloService {
     };
 
     //METODO PARA ACTUALIZAR UN ARTICULO
-    async updateArticulo(id, { nombre, descripcion, precio, stock, estado }, pathNuevaImagen) {
-        try {
-            //Verificar ID
-            if(!id) {
-                throw new Error('ID invalido');
-            };
-            //Verificar articulo a editar
-            const articulo = await Articulo.findById(id);
-            if(!articulo) {
-                throw new Error('No se encontro el articulo con ese ID');
-            };
-            let pathViejaImagen = null;
-            //VALIDACIONES
-            //Validar longitudes
-            if(!nombre && !descripcion && (precio === undefined || precio === null) && (stock === undefined || stock === null) && !estado && !pathNuevaImagen) {
-                throw new Error('Ingrese al menos un campo para actualizar');
-            };
-            if(nombre) {
-                if(nombre.length < 8 || nombre.length > 40) {
-                    throw new Error('El nombre del articulo debe tener entre 8 y 40 caracteres');
-                };
-                articulo.nombre = nombre;
-            };
-            if(descripcion) {
-                if(descripcion.length < 10 || descripcion.length > 200) {
-                    throw new Error('La descripcion del articulo debe tener entre 10 y 200 caracteres');
-                };
-                articulo.descripcion = descripcion;
-            };
-            //Validar valores de precio y stock
-            if(precio !== undefined && precio !== null) {
-                if(precio < 0) {
-                    throw new Error('El precio no puede ser negativo');
-                };
-                articulo.precio = precio;
-            };
-            if(stock !== undefined && stock !== null) {
-                if(stock < 0) {
-                    throw new Error('El stock no puede ser negativo');
-                };
-                articulo.stock = stock;
-            };
-            //Solo se puede colocar el estado en ACTIVO
-            if(estado === 'ACTIVO') {
-                articulo.estado = estado;
-            };
-            //Si llega una imagen nueva, guardamos el path de la vieja y colocamos el path de la nueva en el articulo
-            if(pathNuevaImagen) {
-                pathViejaImagen = path.join(__dirname, '..', articulo.imagen);
-                articulo.imagen = pathNuevaImagen;
-            };
-            await articulo.save();
-            //Si todo sale bien borramos la imagen vieja
-            if(pathViejaImagen && fs.existsSync(pathViejaImagen)) {
-                fs.unlinkSync(pathViejaImagen);
-            };
-            return articulo;
-        } catch (error) {   
-            //Si algo sale mal borramos la imagen nueva que se guardo
-            if(pathNuevaImagen) {
-                const fsPathNuevaImagen = path.join(__dirname, '..', pathNuevaImagen);
-                if(fs.existsSync(fsPathNuevaImagen)) {
-                    fs.unlinkSync(fsPathNuevaImagen);
-                };
-            };
-            throw error;
+    async updateArticulo(id, { nombre, descripcion, precio, stock, estado }, imagen) {
+        //Validar datos
+        if(!nombre && !descripcion && (precio === undefined || precio === null) && (stock === undefined || stock === null) && !estado && !imagen) {
+            throw new Error('Ingrese al menos un campo para actualizar');
         };
+        //Verificar ID
+        if(!id) {
+            throw new Error('ID invalido');
+        };
+        //Verificar articulo a editar
+        const articulo = await Articulo.findById(id);
+        if(!articulo) {
+            throw new Error('No se encontro el articulo con ese ID');
+        };
+        //VALIDACIONES
+        //Validar longitudes
+        if(nombre) {
+            if(nombre.length < 8 || nombre.length > 40) {
+                throw new Error('El nombre del articulo debe tener entre 8 y 40 caracteres');
+            };
+            articulo.nombre = nombre;
+        };
+        if(descripcion) {
+            if(descripcion.length < 10 || descripcion.length > 200) {
+                throw new Error('La descripcion del articulo debe tener entre 10 y 200 caracteres');
+            };
+            articulo.descripcion = descripcion;
+        };
+        //Validar valores de precio y stock
+        if(precio !== undefined && precio !== null) {
+            if(precio < 0) {
+                throw new Error('El precio no puede ser negativo');
+            };
+            articulo.precio = precio;
+        };
+        if(stock !== undefined && stock !== null) {
+            if(stock < 0) {
+                throw new Error('El stock no puede ser negativo');
+            };
+            articulo.stock = stock;
+        };
+        //Solo se puede colocar el estado en ACTIVO
+        if(estado === 'ACTIVO') {
+            articulo.estado = estado;
+        };
+        //Si llega una imagen nueva, esta se reemplaza
+        if(imagen) {
+            const imagenUrl = await subirImagen(imagen.buffer);
+            articulo.imagen = imagenUrl;
+        };
+        await articulo.save();
+        return articulo;
     };
 
     //METODO PARA ELIMINAR UN ARTICULO (logicamente)

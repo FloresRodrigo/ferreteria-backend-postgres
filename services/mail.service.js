@@ -1,3 +1,4 @@
+/*
 const transporter = require('../configs/mail.config');
 
 //Plantillas para mandar mails
@@ -89,3 +90,4 @@ class MailService {
 };//MAILSERVICE
 
 module.exports = new MailService();
+*/

@@ -1,8 +1,8 @@
 const Usuario = require('../models/usuario');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
-const mailService = require('./mail.service');
+//const crypto = require('crypto');
+//const mailService = require('./mail.service');
 const { OAuth2Client } = require('google-auth-library');
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -52,16 +52,19 @@ class AuthService {
             password: hashedPassword
         });
         //Envio de email de registro
+        /*
         try {
             await mailService.sendWelcomeEmail(usuario);
         } catch (error) {
             console.error('ERROR AL ENVIAR EMAIL: ', error);
         };
+        */
         return {
             nombre_completo: usuario.nombre_completo,
             username: usuario.username,
             email: usuario.email
         };
+
     };
 
     //METODO PARA LOGIN
@@ -120,6 +123,7 @@ class AuthService {
         };
     };
 
+    /*
     //METODO PARA RECUPERACION DE CONTRASEÑA
     async forgotPassword({ email }) {
         //Validar que lleguen datos
@@ -144,7 +148,9 @@ class AuthService {
             console.error('ERROR AL ENVIAR EMAIL: ', error);
         };
     };
+    */
 
+    /*
     //METODO PARA REINICIO DE CONTRASEÑA
     async resetPassword({ token },{ password }) {
         //Validar que lleguen datos
@@ -180,6 +186,7 @@ class AuthService {
             console.error('ERROR AL ENVIAR EMAIL', error);
         };
     };
+    */
 
     //METODO PARA LOGIN CON GOOGLE
     async loginGoogle({ idToken }) {
@@ -204,11 +211,13 @@ class AuthService {
                 isGoogle: true
             });
             //Enviar email al registrarse
+            /*
             try {
                 await mailService.sendWelcomeEmail(usuario);
             } catch (error) {
                 console.error('ERROR AL ENVIAR EMAIL: ', error);
             };
+            */
         };
         //Se verifica si la cuenta esta inactiva
         if(usuario.estado === 'INACTIVO') {

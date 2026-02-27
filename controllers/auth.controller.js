@@ -25,6 +25,7 @@ authCtrl.login = async (req, res) => {
     };
 };
 
+/*
 //METODO DE RECUPERACION DE CONTRASEÑA
 authCtrl.forgotPassword = async (req, res) => {
     try {
@@ -35,7 +36,9 @@ authCtrl.forgotPassword = async (req, res) => {
         return failed(res, error.message);
     };
 };
+*/
 
+/*
 //METODO DE REINICIO DE CONTRASEÑA
 authCtrl.resetPassword = async (req, res) => {
     try {
@@ -46,6 +49,7 @@ authCtrl.resetPassword = async (req, res) => {
         return failed(res, error.message);
     }
 };
+*/
 
 //METODO DE LOGIN CON GOOGLE
 authCtrl.loginGoogle = async (req, res) => {

@@ -3,8 +3,7 @@ const Articulo = require('../models/articulo');
 const articuloService = require('../services/articulo.service');
 const Ticket= require('../models/ticket');
 const mongoose = require('mongoose');
-const mailService = require('./mail.service');
-const usuario = require('../models/usuario');
+//const mailService = require('./mail.service');
 
 class TicketService {
     //METODO PARA CREAR TICKET
@@ -85,12 +84,14 @@ class TicketService {
                 await session.commitTransaction();
                 session.endSession();
                 //Buscamos al usuario para poder mandar un correo
+                /*
                 try {
                     const usuario = await Usuario.findById(ticket.id_cliente);
                     await mailService.sendSuccessfulPayment(usuario, ticket);
                 } catch (error) {
                     console.error('ERROR AL ENVIAR EMAIL: ', error);
                 };
+                */
                 return ticket;
             } catch (error) {
                 //Se cancela la sesion si falla algo

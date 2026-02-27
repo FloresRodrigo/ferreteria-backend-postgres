@@ -1,25 +1,15 @@
 const articuloService = require('../services/articulo.service');
 const { success, failed } = require('../helpers/response.helper');
-const fs = require('fs');
 
 const articuloCtrl = {};
 
 //METODO PARA CREAR UN ARTICULO
 articuloCtrl.createArticulo = async (req, res) => {
     try {
-        const imagen = req.file ? `/uploads/articulos/${req.file.filename}` : null;
-        const articulo = await articuloService.createArticulo({ ...req.body, imagen });
+        const articulo = await articuloService.createArticulo({ ...req.body, imagen: req.file });
         return success(res, 'Articulo creado exitosamente', articulo);
     } catch (error) {
         console.error('ERROR AL CREAR ARTICULO: ', error);
-        //Borrar la imagen si falla algo
-        if(req.file?.path) {
-            fs.unlink(req.file.path, err => {
-                if(err) {
-                    console.error('ERROR AL BORRAR LA IMAGEN: ', err);
-                };
-            });
-        };
         return failed(res, error.message);
     };
 };
@@ -32,7 +22,7 @@ articuloCtrl.getArticulos = async (req, res) => {
     } catch (error) {
         console.error('ERROR AL OBTENER ARTICULOS: ', error);
         return failed(res, error.message);
-    }
+    };
 };
 
 //METODO PARA TRAER EL INVENTARIO (para el admin)
@@ -43,7 +33,7 @@ articuloCtrl.getInventario = async (req, res) => {
     } catch (error) {
         console.error('ERROR AL OBTENER INVENTARIO: ', error);
         return failed(res, error.message);
-    }
+    };
 };
  
 //METODO PARA TRAER UN ARTICULO (para los clientes)
@@ -54,7 +44,7 @@ articuloCtrl.getArticuloPublic = async (req, res) => {
     } catch (error) {
         console.error('ERROR AL OBTENER ARTICULO PUBLICO: ', error);
         return failed(res, error.message);
-    }
+    };
 };
 
 //METODO PARA TRAER UN ARTICULO (para el admin)
@@ -65,19 +55,18 @@ articuloCtrl.getArticuloAdmin = async (req, res) => {
     } catch (error) {
         console.error('ERROR AL OBTENER ARTICULO: ', error);
         return failed(res, error.message);
-    }
+    };
 };
 
 //METODO PARA ACTUALIZAR UN ARTICULO
 articuloCtrl.updateArticulo = async (req, res) => {
     try {
-        const imagen = req.file ? `/uploads/articulos/${req.file.filename}` : null;
-        const articulo = await articuloService.updateArticulo(req.params.id, req.body, imagen);
+        const articulo = await articuloService.updateArticulo(req.params.id, req.body, req.file);
         return success(res, 'Articulo actualizado correctamente', articulo);
     } catch (error) {
         console.error('ERROR AL ACTUALIZAR ARTICULO: ', error);
         return failed(res, error.message);
-    }
+    };
 };
 
 //METODO PARA ELIMINAR UN ARTICULO (logicamente)
@@ -88,7 +77,7 @@ articuloCtrl.deleteArticulo = async (req, res) => {
     } catch (error) {
         console.error('ERROR AL ELIMINAR ARTICULO: ', error);
         return failed(res, error.message);
-    }
+    };
 };
 
 //METODO PARA TRAER TOP 10 ARTICULOS MAS VENDIDOS
@@ -99,7 +88,7 @@ articuloCtrl.top10Articulos = async (req, res) => {
     } catch (error) {
         console.error('ERROR AL OBTENER TOP 10: ', error);
         return failed(res, error.message);
-    }
+    };
 };
 
 module.exports = articuloCtrl;
