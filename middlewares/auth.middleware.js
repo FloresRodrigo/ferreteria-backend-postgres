@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { failed } = require('../helpers/response.helper');
-const Usuario = require('../models/usuario');
+const { Usuario } = require('../models');
 
 async function authMiddleware(req, res, next) {
     //Se verifica si existe authorization
@@ -16,7 +16,7 @@ async function authMiddleware(req, res, next) {
     try {
         //Se verifica el token recibido, este tiene id y rol
         const userInfo = jwt.verify(token, process.env.JWT_SECRET);
-        const usuario = await Usuario.findById(userInfo.id);
+        const usuario = await Usuario.findByPk(userInfo.id);
         if(!usuario) {
             return failed(res, 'El usuario no existe');
         };

@@ -1,9 +1,10 @@
-const Usuario = require('../models/usuario');
+const { Usuario } = require('../models');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 //const crypto = require('crypto');
 //const mailService = require('./mail.service');
 const { OAuth2Client } = require('google-auth-library');
+const { Op } = require('sequelize');
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -11,6 +12,10 @@ class AuthService {
     //METODO PARA REGISTRAR
     async register({ nombre_completo, username, email, password }) {
         //VALIDACIONES
+        nombre_completo = nombre_completo?.trim();
+        username = username?.trim();
+        email = email?.trim();
+        password = password?.trim();
         //Validar que lleguen datos
         if(!nombre_completo || !username || !email || !password) {
             throw new Error('Datos invalidos'); 
@@ -34,9 +39,11 @@ class AuthService {
         if(!/.+\@.+\..+/.test(email)) {
             throw new Error('Formato de email invalido');
         };
+        const usernameMinuscula = username.toLowerCase();
+        const emailMinuscula = email.toLowerCase();
         //Validar que no esten ocupados el username o el email
-        const usernameExists = await Usuario.findOne({ username: username });
-        const emailExists = await Usuario.findOne({ email: email });
+        const usernameExists = await Usuario.findOne({ where: { username: usernameMinuscula }, attributes: ['id'] });
+        const emailExists = await Usuario.findOne({ where: { email: emailMinuscula }, attributes: ['id'] });
         if(usernameExists) {
             throw new Error('Username ya registrado');
         };
@@ -47,8 +54,8 @@ class AuthService {
         const hashedPassword = await bcrypt.hash(password, 10);
         const usuario = await Usuario.create({
             nombre_completo: nombre_completo,
-            username: username,
-            email: email,
+            username: usernameMinuscula,
+            email: emailMinuscula,
             password: hashedPassword
         });
         //Envio de email de registro
@@ -64,7 +71,6 @@ class AuthService {
             username: usuario.username,
             email: usuario.email
         };
-
     };
 
     //METODO PARA LOGIN
@@ -77,10 +83,12 @@ class AuthService {
         const loginMinuscula = login.trim().toLowerCase();
         //Buscar usuario por username o email
         const usuario = await Usuario.findOne({
-            $or: [
-                { username: loginMinuscula },
-                { email: loginMinuscula }
-            ]
+            where: {
+                [Op.or]: [
+                    { username: loginMinuscula },
+                    { email: loginMinuscula }
+                ]
+            }
         });
         if(!usuario) {
             throw new Error('Login invalido');
@@ -100,14 +108,14 @@ class AuthService {
             const deleteDays = deleteMs / (24 * 60 * 60 * 1000);
             if(deleteDays < 14) {
                 usuario.estado = 'ACTIVO';
-                usuario.deleteRequestedAt = undefined;
+                usuario.deleteRequestedAt = null;
             };
         };
         //Si no pasaron 14 dias desde la eliminacion de su cuenta, esta se vuelve a activar
         //Firma del JWT con id y rol
         const token = jwt.sign(
             {
-                id: usuario._id,
+                id: usuario.id,
                 rol: usuario.rol
             },
             process.env.JWT_SECRET,
@@ -199,7 +207,8 @@ class AuthService {
         //Guardar el nombre y el email del payload
         const { name, email } = ticket.getPayload();
         //Verificar si el email ya esta registrado en el sitio
-        let usuario = await Usuario.findOne({ email: email });
+        const emailMinuscula = email.trim().toLowerCase();
+        let usuario = await Usuario.findOne({ where: { email: emailMinuscula } });
         //Si no esta registrado, este se crea
         if(!usuario) {
             //Genera un username unico en caso que dos correos choquen
@@ -207,7 +216,7 @@ class AuthService {
             usuario = await Usuario.create({
                 nombre_completo: name,
                 username: usernameUnico,
-                email: email,
+                email: emailMinuscula,
                 isGoogle: true
             });
             //Enviar email al registrarse
@@ -225,13 +234,13 @@ class AuthService {
             const deleteDays = deleteMs / (24 * 60 * 60 * 1000);
             if(deleteDays < 14) {
                 usuario.estado = 'ACTIVO';
-                usuario.deleteRequestedAt = undefined;
+                usuario.deleteRequestedAt = null;
             };
         };
         //Se firma el JWT
         const token = jwt.sign(
         {
-            id: usuario._id,
+            id: usuario.id,
             rol: usuario.rol
         },
            process.env.JWT_SECRET,
@@ -252,11 +261,12 @@ class AuthService {
     //METODO PARA ESTABLECER CONTRASEÑA A CUENTA CREADA CON GOOGLE
     async setPasswordGoogle( id, { password }) {
         //Se valida la contraseña
+        password = password?.trim();
         if(!password || password.length < 8 || password.length > 20) {
             throw new Error('Contraseña invalida');
         };
         //Se busca al usuario
-        const usuario = await Usuario.findById(id);
+        const usuario = await Usuario.findByPk(id);
         if(!usuario) {
             throw new Error('Usuario no encontrado');
         };
@@ -280,7 +290,7 @@ class AuthService {
         let username = base;
         let contador = 1;
         //Va aumentando el contador cada vez que encontremos un username ya registrado
-        while(await Usuario.findOne({ username: username })) {
+        while(await Usuario.findOne({ where: { username: username } })) {
             username = `${ base }_${ contador }`;
             contador++;
         };

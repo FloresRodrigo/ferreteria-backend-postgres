@@ -1,24 +1,25 @@
-const Usuario = require('../models/usuario');
+const { Usuario } = require('../models');
 const bcrypt = require('bcrypt');
 //const mailService = require('./mail.service');
+const { Op } = require('sequelize');
 
 class UsuarioService {
     //METODO PARA OBTENER TODOS LOS USUARIOS
     async getUsuarios({ nombre_completo, username, email, estado }) {
         const filter = {};
         if(nombre_completo && nombre_completo.trim() !== '') {
-            filter.nombre_completo = { $regex: nombre_completo.trim(), $options: 'i' };
+            filter.nombre_completo = { [Op.iLike]: `%${nombre_completo.trim()}%` };
         };
         if(username && username.trim() !== '') {
-            filter.username = { $regex: username.trim(), $options: 'i' };
+            filter.username = { [Op.iLike]: `%${username.trim()}%` };
         };
         if(email && email.trim() !== '') {
-            filter.email = { $regex: email.trim(), $options: 'i' };
+            filter.email = { [Op.iLike]: `%${email.trim()}%` };
         };
         if(estado && (estado === 'ACTIVO' || estado === 'INACTIVO')) {
             filter.estado = estado;
         };
-        const usuarios = await Usuario.find(filter).select('-password -resetPasswordToken -resetPasswordExpiration');
+        const usuarios = await Usuario.findAll({ where: filter, attributes: { exclude: ['password', 'resetPasswordToken', 'resetPasswordExpiration'] } });
         return usuarios;
     };
 
@@ -27,7 +28,7 @@ class UsuarioService {
         if(!id) {
             throw new Error('Debe ingresar un ID');
         };
-        const usuario = await Usuario.findById(id).select('-password -resetPasswordToken -resetPasswordExpiration -deleteRequestedAt');
+        const usuario = await Usuario.findByPk(id, { attributes: { exclude: ['password', 'resetPasswordToken', 'resetPasswordExpiration', 'deleteRequestedAt'] } });
         if(!usuario) {
             throw new Error('No se encontro un usuario con ese ID');
         };
@@ -40,7 +41,13 @@ class UsuarioService {
         if(!id) {
             throw new Error('Debe ingresar un ID');
         };
-        const usuario = await Usuario.findById(id);
+        nombre_completo = nombre_completo?.trim();
+        username = username?.trim();
+        email = email?.trim();
+        if(!nombre_completo && !username && !email) {
+            throw new Error('Ingrese al menos un campo');
+        };
+        const usuario = await Usuario.findByPk(id);
         if(!usuario) {
             throw new Error('No se encontro un usuario con ese ID');
         };
@@ -61,11 +68,12 @@ class UsuarioService {
             if(!/^[A-Za-z0-9]+$/.test(username)) {
                 throw new Error('El username solo puede tener letras y numeros');
             };
-            const usernameExists = await Usuario.findOne({ username: username, _id: { $ne: id } });
+            const usernameMinuscula = username.trim().toLowerCase();
+            const usernameExists = await Usuario.findOne({ where: { username: usernameMinuscula, id: { [Op.ne]: id } }, attributes: ['id'] });
             if(usernameExists) {
                 throw new Error('Username ya registrado');
             };
-            usuario.username = username;
+            usuario.username = usernameMinuscula;
         };
         //Actualizar email
         let emailChanged = false;
@@ -74,16 +82,14 @@ class UsuarioService {
             if(!/.+\@.+\..+/.test(email)) {
                 throw new Error('Formato de email invalido');
             };
-            const emailExists = await Usuario.findOne({ email: email, _id: { $ne: id } });
+            const emailMinuscula = email.toLowerCase();
+            const emailExists = await Usuario.findOne({ where: { email: emailMinuscula, id: { [Op.ne]: id } }, attributes: ['id'] });
             if(emailExists) {
                 throw new Error('Email ya registrado');
             };
             oldEmail = usuario.email;
-            usuario.email = email;
+            usuario.email = emailMinuscula;
             emailChanged = true;
-        };
-        if(!nombre_completo && !username && !email) {
-            throw new Error('Ingrese al menos un campo');
         };
         await usuario.save();
         //Enviar solo si se cambio email y actualizo correctamente
@@ -104,11 +110,12 @@ class UsuarioService {
         if(!id) {
             throw new Error('Debe ingresar un ID');
         };
-        const usuario = await Usuario.findById(id);
+        const usuario = await Usuario.findByPk(id);
         if(!usuario) {
             throw new Error('No se encontro un usuario con ese ID');
         };
         //Validar que lleguen datos
+        newPassword = newPassword?.trim();
         if(!actualPassword || !newPassword || !repeatNewPassword) {
             throw new Error('Debe completar todos los campos');
         };
@@ -151,10 +158,14 @@ class UsuarioService {
             throw new Error('Debe ingresar un ID');
         };
         //Verificar usuario a modificar
-        const usuario = await Usuario.findById(id);
+        const usuario = await Usuario.findByPk(id);
         if(!usuario) {
             throw new Error('No se encontro un usuario con ese ID');
         };
+        nombre_completo = nombre_completo?.trim();
+        username = username?.trim();
+        email = email?.trim();
+        password = password?.trim();
         if(!nombre_completo && !username && !email && !password && !estado) {
             throw new Error('Ingrese al menos un campo');
         };
@@ -173,25 +184,27 @@ class UsuarioService {
             if(!/^[A-Za-z0-9]+$/.test(username)) {
                 throw new Error('El username solo puede tener letras y numeros');
             };
-            const usernameExists = await Usuario.findOne({ username: username, _id: { $ne: id } });
+            const usernameMinuscula = username.toLowerCase();
+            const usernameExists = await Usuario.findOne({ where: { username: usernameMinuscula, id: { [Op.ne]: id } }, attributes: ['id'] });
             if(usernameExists) {
                 throw new Error('Username ya registrado');
             };
-            usuario.username = username;
+            usuario.username = usernameMinuscula;
         };
         //Modificar email solo si llega
         let oldEmail;
         let emailChanged = false;
-        if(email && email !== usuario.email) {
-            if(!/.+\@.+\..+/.test(email)) {
+        const emailMinuscula = email?.toLowerCase();
+        if(emailMinuscula && emailMinuscula !== usuario.email) {
+            if(!/.+\@.+\..+/.test(emailMinuscula)) {
                 throw new Error('Formato de email invalido');
             };
-            const emailExists = await Usuario.findOne({ email: email, _id: { $ne: id } });
+            const emailExists = await Usuario.findOne({ where: { email: emailMinuscula, id: { [Op.ne]: id } }, attributes: ['id'] });
             if(emailExists) {
                 throw new Error('Email ya registrado');
             };
             oldEmail = usuario.email;
-            usuario.email = email;
+            usuario.email = emailMinuscula;
             emailChanged = true;
         };
         //Cambiar contraseña solo si llega
@@ -209,7 +222,7 @@ class UsuarioService {
         if(estado) {
             if(estado === 'ACTIVO') {
                 usuario.estado = estado;
-                usuario.deleteRequestedAt = undefined;
+                usuario.deleteRequestedAt = null;
             };
         };
         await usuario.save();
@@ -238,7 +251,7 @@ class UsuarioService {
             throw new Error('IDs invalidos');
         };
         //Verificar usuario a eliminar
-        const usuario = await Usuario.findById(idTarget);
+        const usuario = await Usuario.findByPk(idTarget);
         if(!usuario) {
             throw new Error('El usuario a eliminar no existe');
         };
