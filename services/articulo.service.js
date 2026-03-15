@@ -8,6 +8,8 @@ class ArticuloService {
         //Validar que lleguen todos los datos
         nombre = nombre?.trim();
         descripcion = descripcion?.trim();
+        precio = precio !== undefined && precio !== null ? Number(precio) : precio;
+        stock = stock !== undefined && stock !== null ? Number(stock) : stock;
         if(!nombre || !descripcion || precio === undefined || precio === null || stock == undefined || stock === null) {
             throw new Error('Debe ingresar todos los campos');
         };
@@ -16,8 +18,8 @@ class ArticuloService {
         };
         //VALIDACIONES
         //Validar longitudes
-        if(nombre.length < 8 || nombre.length > 40) {
-            throw new Error('El nombre del articulo debe tener entre 8 y 40 caracteres');
+        if(nombre.length < 3 || nombre.length > 40) {
+            throw new Error('El nombre del articulo debe tener entre 3 y 40 caracteres');
         };
         if(descripcion.length < 10 || descripcion.length > 200) {
             throw new Error('La descripcion del articulo debe tener entre 10 y 200 caracteres');
@@ -240,6 +242,8 @@ class ArticuloService {
         //Validar datos
         nombre = nombre?.trim();
         descripcion = descripcion?.trim();
+        precio = precio !== undefined && precio !== null ? Number(precio) : precio;
+        stock = stock !== undefined && stock !== null ? Number(stock) : stock;
         if(!nombre && !descripcion && (precio === undefined || precio === null) && (stock === undefined || stock === null) && !estado && !imagen) {
             throw new Error('Ingrese al menos un campo para actualizar');
         };
@@ -251,8 +255,8 @@ class ArticuloService {
         //VALIDACIONES
         //Validar longitudes
         if(nombre) {
-            if(nombre.length < 8 || nombre.length > 40) {
-                throw new Error('El nombre del articulo debe tener entre 8 y 40 caracteres');
+            if(nombre.length < 3 || nombre.length > 40) {
+                throw new Error('El nombre del articulo debe tener entre 3 y 40 caracteres');
             };
             articulo.nombre = nombre;
         };

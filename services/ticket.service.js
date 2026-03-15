@@ -55,7 +55,8 @@ class TicketService {
                 ...detalle
             });
         };
-        return ticket;
+        const ticketConDetalles = await Ticket.findByPk(ticket.id, { include: [{ model: DetalleTicket, as: 'detalles_ticket' }] });
+        return ticketConDetalles;
     };
 
     //METODO PARA PAGAR TICKET (no tiene endpoint)
@@ -125,7 +126,7 @@ class TicketService {
             throw new Error('Ticket no encontrado');
         };
         //Se valida que quien lo solicita esta relacionado al ticket
-        if(ticket.id_cliente.toString() !== idUsuario.toString()) { 
+        if(Number(ticket.id_cliente) !== Number(idUsuario)) { 
             throw new Error('No esta autorizado');
         };
         if(ticket.estado !== 'PENDIENTE') {
@@ -143,7 +144,7 @@ class TicketService {
             throw new Error('Usuario invalido');
         };
         //Recupera un ticket sin los campos de cuando se creo ni actualizo
-        const tickets = await Ticket.findAll({ where: { id_cliente: id }, attributes: { exclude: ['createdAt', 'updatedAt'] }, order: [['createdAt', 'DESC']] });
+        const tickets = await Ticket.findAll({ where: { id_cliente: id }, attributes: { exclude: ['createdAt', 'updatedAt'] }, order: [['createdAt', 'DESC']], include: [{ model: DetalleTicket, as: 'detalles_ticket' }] });
         return tickets;
     };
 
@@ -154,7 +155,7 @@ class TicketService {
         if(id) {
             filter.id_cliente = id;
         };
-        const tickets = await Ticket.findAll({ where: filter, order: [['createdAt', 'DESC']] });
+        const tickets = await Ticket.findAll({ where: filter, order: [['createdAt', 'DESC']], include: [{ model: DetalleTicket, as: 'detalles_ticket' }] });
         return tickets;
     };
 
@@ -167,12 +168,12 @@ class TicketService {
         if(!idTicket) {
             throw new Error('Ingrese el ID del ticket a buscar');
         };
-        const ticket = await Ticket.findByPk(idTicket);
+        const ticket = await Ticket.findByPk(idTicket, { include: [{ model: DetalleTicket, as: 'detalles_ticket' }] });
         if(!ticket) {
             throw new Error('Ticket no encontrado');
         };
         //Se valida que quien solicita el ticket sea el cliente que lo creo
-        if(idUsuario.toString() !== ticket.id_cliente.toString()) {
+        if(Number(idUsuario) !== Number(ticket.id_cliente)) {
             throw new Error('No autorizado');
         };
         return ticket;
@@ -184,7 +185,7 @@ class TicketService {
         if(!id) {
             throw new Error('ID invalido');
         };
-        const ticket = await Ticket.findByPk(id);
+        const ticket = await Ticket.findByPk(id, { include: [{ model: DetalleTicket, as: 'detalles_ticket' }] });
         if(!ticket) {
             throw new Error('No se encontro el ticket');
         };

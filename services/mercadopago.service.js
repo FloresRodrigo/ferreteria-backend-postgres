@@ -13,7 +13,7 @@ class MercadoPagoService {
                 //Que aparecera en el detalle
                 items: [
                     {
-                        title: `Ticket #${ticket.nro_ticket}`,
+                        title: `Ticket #${ticket.id}`,
                         quantity: 1,
                         unit_price: Number(ticket.total),
                         currency_id: 'ARS'
@@ -28,7 +28,7 @@ class MercadoPagoService {
                 //Si el resultado es success retornara aprobado
                 auto_return: 'approved',
                 //Se guarda el id del ticket con el que se inicio el proceso
-                external_reference: ticket._id.toString(),
+                external_reference: ticket.id,
                 //URL a donde mandara la notificacion
                 notification_url: process.env.MP_URL
             }

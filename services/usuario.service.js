@@ -68,7 +68,7 @@ class UsuarioService {
             if(!/^[A-Za-z0-9]+$/.test(username)) {
                 throw new Error('El username solo puede tener letras y numeros');
             };
-            const usernameMinuscula = username.trim().toLowerCase();
+            const usernameMinuscula = username?.toLowerCase();
             const usernameExists = await Usuario.findOne({ where: { username: usernameMinuscula, id: { [Op.ne]: id } }, attributes: ['id'] });
             if(usernameExists) {
                 throw new Error('Username ya registrado');
@@ -78,11 +78,11 @@ class UsuarioService {
         //Actualizar email
         let emailChanged = false;
         let oldEmail;
-        if(email && email !== usuario.email) {
-            if(!/.+\@.+\..+/.test(email)) {
+        const emailMinuscula = email?.toLowerCase();
+        if(emailMinuscula && emailMinuscula !== usuario.email) {
+            if(!/.+\@.+\..+/.test(emailMinuscula)) {
                 throw new Error('Formato de email invalido');
             };
-            const emailMinuscula = email.toLowerCase();
             const emailExists = await Usuario.findOne({ where: { email: emailMinuscula, id: { [Op.ne]: id } }, attributes: ['id'] });
             if(emailExists) {
                 throw new Error('Email ya registrado');
@@ -184,7 +184,7 @@ class UsuarioService {
             if(!/^[A-Za-z0-9]+$/.test(username)) {
                 throw new Error('El username solo puede tener letras y numeros');
             };
-            const usernameMinuscula = username.toLowerCase();
+            const usernameMinuscula = username?.toLowerCase();
             const usernameExists = await Usuario.findOne({ where: { username: usernameMinuscula, id: { [Op.ne]: id } }, attributes: ['id'] });
             if(usernameExists) {
                 throw new Error('Username ya registrado');
@@ -256,7 +256,7 @@ class UsuarioService {
             throw new Error('El usuario a eliminar no existe');
         };
         //Verificar que no se elimine a si mismo
-        if(idReq.toString() === usuario._id.toString()) {
+        if(Number(idReq) === Number(usuario.id)) {
             throw new Error('No puede eliminarse a si mismo');
         };
         //Verificar que no este ya inactivo
