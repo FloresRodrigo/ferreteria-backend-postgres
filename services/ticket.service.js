@@ -70,7 +70,7 @@ class TicketService {
                 if(!idTicket) {
                     throw new Error('ID invalido');
                 };
-                const ticket = await Ticket.findByPk(idTicket, { transaction: transaction });
+                const ticket = await Ticket.findByPk(idTicket, { transaction: transaction, lock: transaction.LOCK.UPDATE });
                 if(!ticket) {
                     throw new Error('No se encontro un ticket con ese ID');
                 };
@@ -78,7 +78,7 @@ class TicketService {
                 if(ticket.estado !== 'PENDIENTE') {
                     throw new Error('El ticket ya fue pagado o esta cancelado');
                 };
-                const detalles = await DetalleTicket.findAll({ where: { id_ticket: idTicket }, transaction: transaction });
+                const detalles = await DetalleTicket.findAll({ where: { id_ticket: idTicket }, transaction: transaction, lock: transaction.LOCK.UPDATE });
                 //Se verifica que el ticket tenga detalles
                 if(!detalles || detalles.length === 0) {
                     throw new Error('El ticket no tiene detalles');
