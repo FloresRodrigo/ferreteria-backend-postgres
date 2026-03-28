@@ -1,6 +1,5 @@
-const { Articulo } = require('../models');
+const ArticuloRepository = require('../repositories/articulo.repository');
 const { subirImagen } = require('./imgbb.service');
-const { Op } = require('sequelize');
 
 class ArticuloService {
     //METODO PARA CREAR UN ARTICULO
@@ -44,78 +43,30 @@ class ArticuloService {
     };
 
     //METODO PARA TRAER LOS ARTICULOS (para los clientes)
+    //Ahora solo normaliza y valida
     async getArticulos({ nombre, descripcion, precioMin, precioMax, page, limit, sortBy, order}) {
         //Para que por defecto traiga la pagina 1 con 9 articulos
         page = Math.max(1, Number(page) || 1 );
         limit = Math.min(50, Math.max(1, Number(limit) || 9));
-        const filter = {
-            estado: 'ACTIVO'
+        if(nombre) {
+            nombre = nombre.trim();
         };
-        if(nombre && nombre.trim() !== '') {
-            filter.nombre = { [Op.iLike]: `%${nombre.trim()}%` }
+        if(descripcion) {
+            descripcion = descripcion.trim();
         };
-        if(descripcion && descripcion.trim() !== '') {
-            filter.descripcion = { [Op.iLike]: `%${descripcion.trim()}%` }
+        if(precioMin !== undefined && precioMin !== '') {
+            precioMin = Number(precioMin);
         };
-        //Para traer precios mayor que y/o menor que
-        if((precioMin !== undefined && precioMin !== '') || (precioMax !== undefined && precioMax !== '')) {
-            filter.precio = {};
-            if(precioMin !== undefined && precioMin !== '') {
-                filter.precio[Op.gte] = Number(precioMin);
-            };
-            if(precioMax !== undefined && precioMax !== '') {
-                filter.precio[Op.lte] = Number(precioMax);
-            };
+        if(precioMax !== undefined && precioMax !== '') {
+            precioMax = Number(precioMax);
         };
-        //Establecer el salto
-        const skip = (page - 1) * limit;
-        //Si no llega forma de ordenacion, se devuelve lo mas nuevo primero
-        let sort = [['createdAt', 'DESC']];   
-        //Cuando si llega se asigna esa forma
         if(sortBy) {
             const orderValid = order === 'asc' || order === 'desc';
-            switch (sortBy) {
-                //Se ordena por mayor precio o menor precio
-                case 'precio':
-                    if(orderValid) {
-                        sort = [['precio', order.toUpperCase()]];
-                    } else {
-                        throw new Error('Ingrese un orden de precio valido');
-                    };
-                    break;
-                //Se ordena por nombre (A-z)
-                case 'nombre':
-                    sort = [['nombre', 'ASC']];
-                    break;
-                //Si no es un caso valido, ordena por defecto desde el mas nuevo
-                default: sort = [['createdAt', 'DESC']];
+            if(sortBy === 'precio' && !orderValid) {
+                throw new Error('Ingrese un orden de precio valido');
             };
         };
-        //Se establece todo lo definido
-        const [ articulos, total ] = await Promise.all([
-            Articulo.findAll({
-                where: filter,
-                attributes: { exclude: ['estado', 'total_vendido', 'createdAt', 'updatedAt'] },
-                order: sort,
-                offset: skip,
-                limit: limit
-            }),
-            Articulo.count({
-                where: filter
-            })
-        ]);
-        return {
-            articulos,
-            pagination: {
-                page,
-                limit,
-                total,
-                //Cuantas paginas totales habran con el limite establecido
-                totalPages: Math.ceil(total / limit),
-                //Verifica si se llego al total de articulos
-                hasMore: page * limit < total
-            }
-        };
+        return await ArticuloRepository.getArticulos({ nombre, descripcion, precioMin, precioMax, page, limit, sortBy, order });
     };
 
     //METODO PARA TREAER EL INVENTARIO (para el admin)
@@ -344,7 +295,7 @@ class ArticuloService {
 
     //METODO PARA TRAER TOP 10 ARTICULOS MAS VENDIDOS
     async top10Articulos() {
-        const destacados = await Articulo.findAll({ where: { estado: 'ACTIVO' }, attributes: { exclude: ['estado', 'total_vendido', 'createdAt', 'updatedAt'] }, order: [['total_vendido', 'DESC']], limit: 10 });
+        const destacados = await ArticuloRepository.top10Articulos();
         return destacados;
     };
 

@@ -1,6 +1,5 @@
 const jwt = require('jsonwebtoken');
 const { failed } = require('../helpers/response.helper');
-const { Usuario } = require('../models');
 
 async function authMiddleware(req, res, next) {
     //Se verifica si existe authorization

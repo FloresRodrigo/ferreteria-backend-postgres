@@ -1,10 +1,9 @@
-const { Usuario } = require('../models');
+
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 //const crypto = require('crypto');
 //const mailService = require('./mail.service');
 const { OAuth2Client } = require('google-auth-library');
-const { Op } = require('sequelize');
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 

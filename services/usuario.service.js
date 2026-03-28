@@ -1,7 +1,6 @@
-const { Usuario } = require('../models');
+
 const bcrypt = require('bcrypt');
 //const mailService = require('./mail.service');
-const { Op } = require('sequelize');
 
 class UsuarioService {
     //METODO PARA OBTENER TODOS LOS USUARIOS

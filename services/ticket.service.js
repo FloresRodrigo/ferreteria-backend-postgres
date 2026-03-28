@@ -1,6 +1,5 @@
-const { Usuario, Articulo, Ticket, DetalleTicket } = require('../models');
+
 const articuloService = require('../services/articulo.service');
-const sequelize = require('../database');
 //const mailService = require('./mail.service');
 
 class TicketService {
