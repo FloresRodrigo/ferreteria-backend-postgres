@@ -1,4 +1,4 @@
-
+const UsuarioRepository = require('../repositories/usuario.repository');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 //const crypto = require('crypto');
@@ -41,8 +41,8 @@ class AuthService {
         const usernameMinuscula = username.toLowerCase();
         const emailMinuscula = email.toLowerCase();
         //Validar que no esten ocupados el username o el email
-        const usernameExists = await Usuario.findOne({ where: { username: usernameMinuscula }, attributes: ['id'] });
-        const emailExists = await Usuario.findOne({ where: { email: emailMinuscula }, attributes: ['id'] });
+        const usernameExists = await UsuarioRepository.findByUsername(usernameMinuscula);
+        const emailExists = await UsuarioRepository.findByEmail(emailMinuscula);
         if(usernameExists) {
             throw new Error('Username ya registrado');
         };
@@ -51,12 +51,7 @@ class AuthService {
         };
         //Crear usuario con contraseña hasheada
         const hashedPassword = await bcrypt.hash(password, 10);
-        const usuario = await Usuario.create({
-            nombre_completo: nombre_completo,
-            username: usernameMinuscula,
-            email: emailMinuscula,
-            password: hashedPassword
-        });
+        const usuario = await UsuarioRepository.create({ nombre_completo, username: usernameMinuscula, email: emailMinuscula, password: hashedPassword });
         //Envio de email de registro
         /*
         try {
@@ -81,14 +76,7 @@ class AuthService {
         //Para que no sea case sensitive al hacer login
         const loginMinuscula = login.trim().toLowerCase();
         //Buscar usuario por username o email
-        const usuario = await Usuario.findOne({
-            where: {
-                [Op.or]: [
-                    { username: loginMinuscula },
-                    { email: loginMinuscula }
-                ]
-            }
-        });
+        const usuario = await UsuarioRepository.findByUsernameOrEmail(loginMinuscula);
         if(!usuario) {
             throw new Error('Login invalido');
         };
@@ -121,7 +109,7 @@ class AuthService {
             { expiresIn: process.env.JWT_EXPIRATION || '2hr' }
         );
         usuario.lastLogin = new Date();
-        await usuario.save();
+        await UsuarioRepository.authSave(usuario.id, { estado: usuario.estado, deleteRequestedAt: usuario.deleteRequestedAt, lastLogin: usuario.lastLogin });
         return {
             nombre_completo: usuario.nombre_completo,
             username: usuario.username,
@@ -207,17 +195,12 @@ class AuthService {
         const { name, email } = ticket.getPayload();
         //Verificar si el email ya esta registrado en el sitio
         const emailMinuscula = email.trim().toLowerCase();
-        let usuario = await Usuario.findOne({ where: { email: emailMinuscula } });
+        let usuario = await UsuarioRepository.findByEmail(emailMinuscula);
         //Si no esta registrado, este se crea
         if(!usuario) {
             //Genera un username unico en caso que dos correos choquen
             const usernameUnico = await this.generarUsernameUnico(email);
-            usuario = await Usuario.create({
-                nombre_completo: name,
-                username: usernameUnico,
-                email: emailMinuscula,
-                isGoogle: true
-            });
+            usuario = await UsuarioRepository.createGoogle({ nombre_completo: name, username: usernameUnico, email: emailMinuscula, isGoogle: true });
             //Enviar email al registrarse
             /*
             try {
@@ -247,7 +230,7 @@ class AuthService {
         );
         //Actualiza ultimo login
         usuario.lastLogin = new Date();
-        await usuario.save();
+        await UsuarioRepository.authSave(usuario.id, { estado: usuario.estado, deleteRequestedAt: usuario.deleteRequestedAt, lastLogin: usuario.lastLogin });
         return {
             nombre_completo: usuario.nombre_completo,
             username: usuario.username,
@@ -265,12 +248,12 @@ class AuthService {
             throw new Error('Contraseña invalida');
         };
         //Se busca al usuario
-        const usuario = await Usuario.findByPk(id);
+        const usuario = await UsuarioRepository.findByPk(id);
         if(!usuario) {
             throw new Error('Usuario no encontrado');
         };
         //Indica si tiene contraseña establecida
-        if(!usuario.isGoogle) {
+        if(usuario.isGoogle !== true) {
             throw new Error('Este usuario no puede establecer contraseña');
         };
         //Se asigna la contraseña nueva hasheada
@@ -279,7 +262,7 @@ class AuthService {
         usuario.passwordChangedAt = new Date();
         //Se indica que se establecio contraseña
         usuario.isGoogle = false;
-        await usuario.save();
+        await UsuarioRepository.authSave(usuario.id, { password: usuario.password, passwordChangedAt: usuario.passwordChangedAt, isGoogle: usuario.isGoogle });
     };
 
     //METODO PARA GENERAR UN USERNAME
@@ -289,7 +272,7 @@ class AuthService {
         let username = base;
         let contador = 1;
         //Va aumentando el contador cada vez que encontremos un username ya registrado
-        while(await Usuario.findOne({ where: { username: username } })) {
+        while(await UsuarioRepository.findByUsername(username)) {
             username = `${ base }_${ contador }`;
             contador++;
         };
