@@ -248,7 +248,7 @@ class AuthService {
             throw new Error('Contraseña invalida');
         };
         //Se busca al usuario
-        const usuario = await UsuarioRepository.findByPk(id);
+        const usuario = await UsuarioRepository.findByPkSens(id);
         if(!usuario) {
             throw new Error('Usuario no encontrado');
         };
@@ -262,7 +262,7 @@ class AuthService {
         usuario.passwordChangedAt = new Date();
         //Se indica que se establecio contraseña
         usuario.isGoogle = false;
-        await UsuarioRepository.authSave(usuario.id, { password: usuario.password, passwordChangedAt: usuario.passwordChangedAt, isGoogle: usuario.isGoogle });
+        await UsuarioRepository.authSave(id, { password: usuario.password, passwordChangedAt: usuario.passwordChangedAt, isGoogle: usuario.isGoogle });
     };
 
     //METODO PARA GENERAR UN USERNAME
