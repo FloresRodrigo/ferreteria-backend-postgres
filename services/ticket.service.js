@@ -1,5 +1,9 @@
-
+const UsuarioRepository = require('../repositories/usuario.repository');
+const ArticuloRepository = require('../repositories/articulo.repository');
+const TicketRepository = require('../repositories/ticket.repository');
+const DetalleTicketRepository = require('../repositories/detalleticket.repository');
 const articuloService = require('../services/articulo.service');
+const pool = require('../database');
 //const mailService = require('./mail.service');
 
 class TicketService {
@@ -9,7 +13,7 @@ class TicketService {
         if(!id) {
             throw new Error('Debe ingresar un ID');
         };
-        const usuario = await Usuario.findByPk(id);
+        const usuario = await UsuarioRepository.findByPkNoSens(id);
         if(!usuario) {
             throw new Error('No se encontro un usuario con ese ID ');
         };
@@ -25,7 +29,7 @@ class TicketService {
             if(!art.id || !art.cantidad || art.cantidad < 1) {
                 throw new Error('Item del carrito invalido');
             };
-            const articulo = await Articulo.findByPk(art.id);
+            const articulo = await ArticuloRepository.findByPkPub(art.id);
             if(!articulo) {
                 throw new Error('No se encontro articulo con el ID: '+art.id);
             };
@@ -43,33 +47,34 @@ class TicketService {
             });
         };
         //Crear ticket con los detalles establecidos
-        const ticket = await Ticket.create({
+        const ticket = await TicketRepository.create({
             id_cliente: usuario.id,
             fecha_compra: new Date(),
             total: total
         });
         for(const detalle of detalles) {
-            await DetalleTicket.create({
+            await DetalleTicketRepository.create({
                 id_ticket: ticket.id,
                 ...detalle
             });
         };
-        const ticketConDetalles = await Ticket.findByPk(ticket.id, { include: [{ model: DetalleTicket, as: 'detalles_ticket' }] });
+        const ticketConDetalles = await TicketRepository.findByPkDet(ticket.id);
         return ticketConDetalles;
     };
 
     //METODO PARA PAGAR TICKET (no tiene endpoint)
     async pagarTicket(idTicket, maxRetries = 3) {
+        //Verificar ID
+        if(!idTicket) {
+            throw new Error('ID invalido');
+        };
         let intentos = 0;
         while(intentos < maxRetries) {
-            //Se inicia una transaccion, si falla algo se revierte todo
-            const transaction = await sequelize.transaction();
+            const client = await pool.connect();
             try {
-                //Verificar ID y ticket
-                if(!idTicket) {
-                    throw new Error('ID invalido');
-                };
-                const ticket = await Ticket.findByPk(idTicket, { transaction: transaction, lock: transaction.LOCK.UPDATE });
+                //Se inicia una transaccion, si falla algo se revierte todo
+                await client.query('BEGIN');
+                const ticket = await TicketRepository.findByPkLock(idTicket, client);
                 if(!ticket) {
                     throw new Error('No se encontro un ticket con ese ID');
                 };
@@ -77,19 +82,17 @@ class TicketService {
                 if(ticket.estado !== 'PENDIENTE') {
                     throw new Error('El ticket ya fue pagado o esta cancelado');
                 };
-                const detalles = await DetalleTicket.findAll({ where: { id_ticket: idTicket }, transaction: transaction, lock: transaction.LOCK.UPDATE });
+                const detalles = await DetalleTicketRepository.findByTicketIdLock(idTicket, client);
                 //Se verifica que el ticket tenga detalles
                 if(!detalles || detalles.length === 0) {
                     throw new Error('El ticket no tiene detalles');
                 };
                 for(const detalle of detalles) {
-                    await articuloService.actualizarStockYtotal(detalle.id_articulo, detalle.cantidad, transaction);
+                    await articuloService.actualizarStockYtotal(detalle.id_articulo, detalle.cantidad, client);
                 };
-                ticket.estado = 'PAGADO';
-                ticket.fecha_compra = new Date();
-                await ticket.save({ transaction });
+                await TicketRepository.pagar(idTicket, new Date(), client);
                 //Si todo salio bien se hace commit a la transaccion
-                await transaction.commit();
+                await client.query('COMMIT');
                 //Buscamos al usuario para poder mandar un correo
                 /*
                 try {
@@ -99,18 +102,21 @@ class TicketService {
                     console.error('ERROR AL ENVIAR EMAIL: ', error);
                 };
                 */
-                return ticket;
+                const ticketAct = await TicketRepository.findByPkDet(idTicket);
+                return ticketAct;
             } catch (error) {
                 //Se cancela la sesion si falla algo
-                await transaction.rollback();
+                await client.query('ROLLBACK');
                 //Reintentar la operacion si fallo por concurrencia con otro pago
                 if(error.message.includes('deadlock') || error.message.includes('could not serialize')) {
                     intentos++;
                     continue;
                 };
                 throw error;
-            }
-        }
+            } finally {
+                client.release();
+            };
+        };
         throw new Error('No se pudo completar el pago. Intente nuevamente');
     };
 
@@ -120,7 +126,7 @@ class TicketService {
         if(!idTicket) {
             throw new Error('ID de ticket invalido');
         };
-        const ticket = await Ticket.findByPk(idTicket);
+        const ticket = await TicketRepository.findByPk(idTicket);
         if(!ticket) {
             throw new Error('Ticket no encontrado');
         };
@@ -131,9 +137,11 @@ class TicketService {
         if(ticket.estado !== 'PENDIENTE') {
             throw new Error('Solo se puede cancelar un ticket pendiente');
         };
-        ticket.estado = 'CANCELADO';
-        await ticket.save();
-        return ticket;
+        const ticketAct = await TicketRepository.cancelar(idTicket);
+        if(!ticketAct) {
+            throw new Error('El ticket ya no se puede cancelar');
+        };
+        return ticketAct;
     };
 
     //METODO PARA OBTENER TODOS LOS TICKETS (cliente)
@@ -143,18 +151,18 @@ class TicketService {
             throw new Error('Usuario invalido');
         };
         //Recupera un ticket sin los campos de cuando se creo ni actualizo
-        const tickets = await Ticket.findAll({ where: { id_cliente: id }, attributes: { exclude: ['createdAt', 'updatedAt'] }, order: [['createdAt', 'DESC']], include: [{ model: DetalleTicket, as: 'detalles_ticket' }] });
+        const tickets = await TicketRepository.findAll({ id_cliente: id });
         return tickets;
     };
 
     //METODO PARA OBTENER TODOS LOS TICKETS (admin)
     async getTickets({ id }) {
         //Filtro para buscar por ID de usuario
-        const filter = {};
+        const filtro = {};
         if(id) {
-            filter.id_cliente = id;
+            filtro.id_cliente = id;
         };
-        const tickets = await Ticket.findAll({ where: filter, order: [['createdAt', 'DESC']], include: [{ model: DetalleTicket, as: 'detalles_ticket' }] });
+        const tickets = await TicketRepository.findAll(filtro);
         return tickets;
     };
 
@@ -167,7 +175,7 @@ class TicketService {
         if(!idTicket) {
             throw new Error('Ingrese el ID del ticket a buscar');
         };
-        const ticket = await Ticket.findByPk(idTicket, { include: [{ model: DetalleTicket, as: 'detalles_ticket' }] });
+        const ticket = await TicketRepository.findByPkDet(idTicket);
         if(!ticket) {
             throw new Error('Ticket no encontrado');
         };
@@ -184,7 +192,7 @@ class TicketService {
         if(!id) {
             throw new Error('ID invalido');
         };
-        const ticket = await Ticket.findByPk(id, { include: [{ model: DetalleTicket, as: 'detalles_ticket' }] });
+        const ticket = await TicketRepository.findByPkDet(id);
         if(!ticket) {
             throw new Error('No se encontro el ticket');
         };
