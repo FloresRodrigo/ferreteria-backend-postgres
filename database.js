@@ -1,31 +1,32 @@
-const { Sequelize } = require('sequelize');
+const { Pool } = require('pg');
+const fs = require('fs');
+const path = require('path');
 
-const sequelize = new Sequelize(
-    process.env.DB_NAME,
-    process.env.DB_USER,
-    process.env.DB_PASSWORD,
-    {
-        host: process.env.DB_HOST,
-        dialect: 'postgres',
-        port: process.env.DB_PORT,
-        dialectOptions: {
-            ssl: {
-                require: true,
-                rejectUnauthorized: false
-            }
-        }
-    }
-);
+const pool = new Pool({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT
+});
 
-sequelize.authenticate()
-.then(() => {
-    console.log('BD conectada');
-    require('./models');
-    return sequelize.sync();
-})
-.then(() => {
-    console.log('Tablas sincronizadas');
-})
-.catch(error => console.error(error));
+async function initDB() {
+    try {
+        //Prueba que se conecte bien a la bd con una query simple
+        await pool.query('SELECT 1');
+        console.log('BD conectada');
+        //Se ejecuta el script para la creacion de tablas y relaciones
+        const sql = fs.readFileSync(
+            path.join(process.cwd(), 'init.sql'),
+            'utf8'
+        );
+        await pool.query(sql);
+        console.log('Tablas sincronizadas');
+    } catch (error) {
+        console.error(error);
+    };
+};
 
-module.exports = sequelize;
+initDB();
+
+module.exports = pool;
